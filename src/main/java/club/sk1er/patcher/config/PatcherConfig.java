@@ -1323,6 +1323,28 @@ public class PatcherConfig extends Config {
     )
     public static boolean openScreenshotsFolder = true;
 
+    @Dropdown(
+        name = "Uploader",
+        description = "Change what method to use for uploading screenshot.",
+        category = "Screenshots", subcategory = "Upload",
+        options = {"Imgur", "Zipline"}
+    )
+    public static int screenshotUploader = 0;
+
+    @Text(
+        name = "Zipline URL",
+        description = "The zipline url.",
+        category = "Screenshots", subcategory = "Upload"
+    )
+    public static String ziplineURL = "";
+
+    @Text(
+        name = "Zipline Token",
+        description = "The zipline token.",
+        category = "Screenshots", subcategory = "Upload"
+    )
+    public static String ziplineToken = "";
+
     // EXPERIMENTAL
 
     @Info(
@@ -1888,6 +1910,9 @@ public class PatcherConfig extends Config {
         hideIf("extendChatBackgroundOld", () -> true);
         hideIf("chatPositionOld", () -> true);
 
+        hideIf("ziplineURL", () -> screenshotUploader != 1);
+        hideIf("ziplineToken", () -> screenshotUploader != 1);
+
         OldPatcherConfig.nauseaEffect = nauseaEffectOld;
         OldPatcherConfig.fireOverlayOpacity = fireOverlayOpacityOld;
         OldPatcherConfig.disableTitles = disableTitlesOld;
@@ -1991,7 +2016,8 @@ public class PatcherConfig extends Config {
             Arrays.asList(
                 "screenshotNoFeedback", "compactScreenshotResponse", "autoCopyScreenshot", "screenshotPreview",
                 "previewTime", "previewAnimationStyle", "previewScale", "favoriteScreenshot",
-                "deleteScreenshot", "uploadScreenshot", "copyScreenshot", "openScreenshotsFolder"
+                "deleteScreenshot", "uploadScreenshot", "copyScreenshot", "openScreenshotsFolder",
+                "screenshotUploader", "ziplineURL", "ziplineToken"
             ).forEach(property -> addDependency(property, "screenshotManager"));
 
             hideIf("instantFullscreen", () -> !SystemUtils.IS_OS_WINDOWS);
