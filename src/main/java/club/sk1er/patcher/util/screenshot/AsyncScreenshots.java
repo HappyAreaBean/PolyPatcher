@@ -1,30 +1,38 @@
 package club.sk1er.patcher.util.screenshot;
 
 import cc.polyfrost.oneconfig.images.OneImage;
+import cc.polyfrost.oneconfig.libs.universal.ChatColor;
 import cc.polyfrost.oneconfig.libs.universal.UChat;
+import cc.polyfrost.oneconfig.libs.universal.UDesktop;
 import cc.polyfrost.oneconfig.libs.universal.wrappers.message.UTextComponent;
+import cc.polyfrost.oneconfig.utils.IOUtils;
 import cc.polyfrost.oneconfig.utils.Multithreading;
-import cc.polyfrost.oneconfig.utils.Notifications;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Command;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Main;
 import club.sk1er.patcher.Patcher;
 import club.sk1er.patcher.config.PatcherConfig;
 import club.sk1er.patcher.render.ScreenshotPreview;
 import club.sk1er.patcher.util.chat.ChatUtilities;
-import cc.polyfrost.oneconfig.libs.universal.ChatColor;
-import cc.polyfrost.oneconfig.libs.universal.UDesktop;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiNewChat;
 import net.minecraft.event.ClickEvent;
 import net.minecraft.event.HoverEvent;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.jetbrains.annotations.NotNull;
 
 import javax.imageio.ImageIO;
-import java.awt.HeadlessException;
-import java.awt.Image;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -238,7 +246,19 @@ public class AsyncScreenshots implements Runnable {
             Multithreading.runAsync(() -> {
                 ChatUtilities.sendNotification("Screenshot Manager", "Uploading screenshot...");
                 try {
-                    String url = (new OneImage(screenshot)).uploadToImgur(true);
+                    String url;
+
+                    switch (PatcherConfig.screenshotUploader) {
+                        case 0:
+                            url = (new OneImage(screenshot)).uploadToImgur(true);
+                            break;
+                        case 1:
+                            url = uploadZipline(screenshot, true);
+                            break;
+                        default:
+                            throw new RuntimeException("Unknown screenshot uploader type: " + PatcherConfig.screenshotUploader);
+                    }
+
                     IChatComponent component = new UTextComponent(prefix + ChatColor.GREEN + "Screenshot was uploaded to " + url + ".");
                     component.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url));
                     UChat.chat(component);
@@ -248,6 +268,47 @@ public class AsyncScreenshots implements Runnable {
                 }
 
             });
+        }
+
+        public String uploadZipline(File file, boolean copy) {
+            try {
+                String url = PatcherConfig.ziplineURL;
+                HttpPost post = new HttpPost(url);
+                post.setHeader("Authorization", PatcherConfig.ziplineToken);
+
+                String mimeType = java.nio.file.Files.probeContentType(file.toPath());
+                HttpEntity entity = MultipartEntityBuilder.create()
+                    .addBinaryBody("file", file, ContentType.create(mimeType), file.getName())
+                    .build();
+                post.setEntity(entity);
+
+                try (CloseableHttpClient client = HttpClients.createDefault();
+                     CloseableHttpResponse response = client.execute(post)) {
+
+                    int status = response.getStatusLine().getStatusCode();
+                    String responseBody = EntityUtils.toString(response.getEntity());
+                    if (status >= 200 && status < 300) {
+                        JsonObject obj = new JsonParser().parse(responseBody).getAsJsonObject();
+                        String link = obj.getAsJsonArray("files")
+                            .get(0)
+                            .getAsJsonObject()
+                            .get("url")
+                            .getAsString();
+
+                        if (copy) IOUtils.copyStringToClipboard(link);
+
+                        return link;
+                    } else {
+                        Patcher.instance.getLogger().error("Upload failed with HTTP status: {}", status);
+                        Patcher.instance.getLogger().error(responseBody);
+                        return null;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Patcher.instance.getLogger().error("Error uploading file.", e);
+                return null;
+            }
         }
     }
 
