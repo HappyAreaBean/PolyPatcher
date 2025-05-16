@@ -109,6 +109,10 @@ dependencies {
     // Adds the OneConfig library, so we can develop with it.
     modCompileOnly("cc.polyfrost:oneconfig-$platform:0.2.2-alpha+")
 
+    shade("org.apache.httpcomponents:httpmime:4.3.3") {
+        isTransitive = false
+    }
+
     modShade("cc.polyfrost:elementa-$platform:+") {
         isTransitive = false
     }
