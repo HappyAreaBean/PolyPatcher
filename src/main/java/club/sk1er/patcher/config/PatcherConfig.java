@@ -340,7 +340,7 @@ public class PatcherConfig extends Config {
         name = "Unfocused FPS Amount",
         description = "Change the maximum FPS when you're not tabbed into the window, saving resources.",
         category = "Miscellaneous", subcategory = "General",
-        min = 15, max = 240
+        min = 5, max = 240
     )
     public static int unfocusedFPSAmount = 60;
 
@@ -881,7 +881,7 @@ public class PatcherConfig extends Config {
             "but will resolve special entities being occluded when they typically shouldn't be.",
         category = "Performance", subcategory = "Culling"
     )
-    public static boolean checkArmorstandRules;
+    public static boolean checkArmorstandRules = true;
 
     @Switch(
         name = "Disable Enchantment Glint",
