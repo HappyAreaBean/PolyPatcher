@@ -25,6 +25,12 @@ public class LibraryLWJGLOpenALImpl {
             }
 
             String selectedAudioDevice = PatcherConfig.selectedAudioDevice;
+
+            if (selectedAudioDevice.equals("Default Sound Device")) {
+                AL.create();
+                return;
+            }
+
             if (devices.contains(selectedAudioDevice)) {
                 AL.create(selectedAudioDevice, 44100, 60, false);
             } else {

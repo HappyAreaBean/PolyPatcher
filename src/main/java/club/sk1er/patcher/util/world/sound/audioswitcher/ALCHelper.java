@@ -20,7 +20,10 @@ public class ALCHelper {
             if (availableDevices == null) {
                 this.devices = new ArrayList<>();
             } else {
-                this.devices = Arrays.stream(availableDevices).distinct().collect(Collectors.toList());
+                List<String> list = new ArrayList<>();
+                list.add("Default Sound Device");
+                list.addAll(Arrays.stream(availableDevices).distinct().collect(Collectors.toList()));
+                this.devices = list;
             }
         }
 
